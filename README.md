@@ -27,7 +27,7 @@
 
 ### Устновка всех файлов
 ```bash
-git clone https://github.com/alexeypiskunovich/Avito.git
+https://github.com/denisnarubin/avitotest.git
 ```
 ### Запуск Backend сервера
 ```bash
