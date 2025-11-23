@@ -1,141 +1,106 @@
-// App.tsx
-import { useEffect, useState } from "react";
-import axios from "axios";
-import ItemModerationView from "./Item";
-import ListingPage from "./ListingCard";
-import ModeratorStats from "./ModeratorStats";
 
-interface ApiAdvertisement {
-  id: number;
-  title: string;
-  description: string;
-  images: string[];
-  characteristics: Record<string, string>;
-  seller: {
-    name: string;
-    totalAds: number;
-    registeredAt: string;
-  };
-  moderationHistory: {
-    moderatorName: string;
-    timestamp: string;
-    action: string;
-  }[];
-}
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Box, CssBaseline } from '@mui/material';
+import { AnimatePresence, motion } from 'framer-motion';
+import Layout from './components/common/Layout';
+import ProgressBar from './components/common/ProgressBar';
+import { AppThemeProvider } from './components/theme/ThemeContext';
 
-function App() {
-  const [ad, setAd] = useState<ApiAdvertisement | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [adId, setAdId] = useState(1); // текущий ID объявления
 
-  const fetchAd = async (id: number) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.get(`/api/v1/ads/${id}`);
-      setAd(response.data);
-    } catch (err) {
-      console.error("Ошибка загрузки:", err);
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || err.message || "Ошибка загрузки данных");
-      } else {
-        setError("Неизвестная ошибка");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+import Listings from './pages/Listings';
+import ModerationItem from './pages/ModerationItem';
+import Statistics from './pages/Statistics';
 
-  useEffect(() => {
-    fetchAd(adId);
-  }, [adId]);
 
-  const handleApiCall = async (
-    url: string,
-    data?: any,
-    method: "post" | "put" | "delete" = "post"
-  ) => {
-    try {
-      const response = await axios({ method, url, data });
-      console.log("Успех:", response.data);
-      // Обновляем объявление после успешного действия
-      fetchAd(adId);
-      return response.data;
-    } catch (err) {
-      console.error("Ошибка API:", err);
-      if (axios.isAxiosError(err)) {
-        alert(`Ошибка: ${err.response?.data?.message || err.message}`);
-      }
-      throw err;
-    }
-  };
+const ScrollToTop = () => {
+  const location = useLocation();
 
-  if (loading) {
-    return <div>Загрузка...</div>;
-  }
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
-  if (error) {
-    return <div>Ошибка: {error}</div>;
-  }
+  return null;
+};
 
-  if (!ad) {
-    return <div>Объявление не найдено</div>;
-  }
 
-  const lastHistory =
-    ad.moderationHistory.length > 0
-      ? ad.moderationHistory[ad.moderationHistory.length - 1]
-      : {
-          moderatorName: "Не назначен",
-          timestamp: new Date().toISOString(),
-          action: "pending",
-        };
-
-  const yearsOnSite =
-    new Date().getFullYear() - new Date(ad.seller.registeredAt).getFullYear();
+const AnimatedRoutes = () => {
+  const location = useLocation();
 
   return (
     <>
-    
-      <ItemModerationView
-        galleryCount={ad.images.length}
-        description={ad.description}
-        characteristics={ad.characteristics}
-        seller={{
-          name: ad.seller.name,
-          yearsOnSite: yearsOnSite,
-          adsCount: ad.seller.totalAds,
-        }}
-        moderationHistory={{
-          moderator: lastHistory.moderatorName,
-          date: new Date(lastHistory.timestamp).toLocaleString("ru-RU"),
-          status:
-            lastHistory.action === "approved"
-              ? "Одобрено"
-              : lastHistory.action === "rejected"
-              ? "Отклонено"
-              : "Доработка",
-        }}
-        onApprove={() => handleApiCall(`/api/v1/ads/${ad.id}/approve`)}
-        onReject={(reason, comment) =>
-          handleApiCall(`/api/v1/ads/${ad.id}/reject`, { 
-            reason: reason,
-            comment: comment
-          })
-        }
-        onRequestRevision={(reason, comment) =>
-          handleApiCall(`/api/v1/ads/${ad.id}/request-changes`, { 
-            reason: reason,
-            comment: comment
-          })
-        }
-        onPrev={() => setAdId((prev) => Math.max(prev - 1, 1))}
-        onNext={() => setAdId((prev) => prev + 1)}
-      />
-      <ListingPage />
-      <ModeratorStats />
+      <ScrollToTop />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Navigate to="/list" replace />} />
+          <Route path="/list" element={
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Listings />
+            </motion.div>
+          } />
+          <Route path="/item/:id" element={
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ModerationItem />
+            </motion.div>
+          } />
+          <Route path="/stats" element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Statistics />
+            </motion.div>
+          } />
+          <Route path="/listings" element={<Navigate to="/list" replace />} />
+          <Route path="/moderation/:id" element={<Navigate to="/item/:id" replace />} />
+          <Route path="/statistics" element={<Navigate to="/stats" replace />} />
+        </Routes>
+      </AnimatePresence>
     </>
+  );
+};
+
+function App() {
+  const [isLoading, setIsLoading] = React.useState(false);
+
+
+  React.useEffect(() => {
+    const handleStart = () => setIsLoading(true);
+    const handleComplete = () => setIsLoading(false);
+
+    window.addEventListener('beforeunload', handleStart);
+    window.addEventListener('load', handleComplete);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleStart);
+      window.removeEventListener('load', handleComplete);
+    };
+  }, []);
+
+  return (
+    <AppThemeProvider>
+      <CssBaseline />
+      <Router>
+        <Box sx={{ position: 'relative', minHeight: '100vh' }}>
+          <ProgressBar isLoading={isLoading} />
+          <Layout>
+            <AnimatedRoutes />
+          </Layout>
+        </Box>
+      </Router>
+    </AppThemeProvider>
   );
 }
 
