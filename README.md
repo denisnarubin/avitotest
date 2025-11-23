@@ -27,12 +27,12 @@
 
 ### Устновка всех файлов
 ```bash
-https://github.com/denisnarubin/avitotest.git
+git clone https://github.com/denisnarubin/avitotest.git
 ```
 ### Запуск Backend сервера
 ```bash
 # Переход в директорию проекта
-cd Avito
+cd avitotest
 
 # Переход в директорию сервера
 cd tech-int3-server
@@ -49,7 +49,7 @@ npm run dev
 ### Запуск Frontend приложения
 ```bash
 # Переход в директорию проекта
-cd Avito
+cd avitotest
 
 # Открой новый терминал и перейди в директорию фронтенда
 cd frontend
